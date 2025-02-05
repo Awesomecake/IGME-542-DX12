@@ -261,6 +261,14 @@ void Game::Update(float deltaTime, float totalTime)
 		Window::Quit();
 
 	camera.get()->Update(deltaTime);
+
+	entities[0].GetTransform().Rotate(deltaTime, 0, 0);
+	entities[5].GetTransform().Rotate(0, deltaTime, 0);
+
+	entities[1].GetTransform().MoveAbsolute(0, deltaTime * cos(totalTime), 0);
+	entities[2].GetTransform().MoveAbsolute(0, deltaTime * -cos(-totalTime), 0);
+	entities[3].GetTransform().MoveAbsolute(0,0,deltaTime * cos(totalTime));
+	entities[4].GetTransform().MoveAbsolute(0,0,deltaTime * -cos(-totalTime));
 }
 
 
