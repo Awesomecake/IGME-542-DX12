@@ -20,6 +20,9 @@ using namespace DirectX;
 // --------------------------------------------------------
 void Game::Initialize()
 {
+	camera = std::make_shared<Camera>(viewport.Width / viewport.Height, 45.f, XMFLOAT3(0.5, 0, -5));
+	entities = std::vector<GameEntity>();
+
 	CreateRootSigAndPipelineState();
 	CreateGeometry();
 }
@@ -58,34 +61,50 @@ void Game::CreateRootSigAndPipelineState()
 	}
 	
 	// Input layout
-	const unsigned int inputElementCount = 2;
+	const unsigned int inputElementCount = 4;
 	D3D12_INPUT_ELEMENT_DESC inputElements[inputElementCount] = {};
 	{
-		// Create an input layout that describes the vertex format
-		// used by the vertex shader we're using
-		// - This is used by the pipeline to know how to interpret the raw data
-		// sitting inside a vertex buffer
-		// Set up the first element - a position, which is 3 float values
 		inputElements[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-		inputElements[0].SemanticName = "POSITION";
-		inputElements[0].SemanticIndex = 0;
-		// Set up the second element - a color, which is 4 more float values
+		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT; // R32 G32 B32 = float3
+		inputElements[0].SemanticName = "POSITION"; // Name must match semantic in shader
+		inputElements[0].SemanticIndex = 0; // This is the first POSITION semantic
 		inputElements[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-		inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		inputElements[1].SemanticName = "COLOR";
-		inputElements[1].SemanticIndex = 0;
+		inputElements[1].Format = DXGI_FORMAT_R32G32_FLOAT; // R32 G32 = float2
+		inputElements[1].SemanticName = "TEXCOORD";
+		inputElements[1].SemanticIndex = 0; // This is the first TEXCOORD semantic
+		inputElements[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+		inputElements[2].Format = DXGI_FORMAT_R32G32B32_FLOAT; // R32 G32 B32 = float3
+		inputElements[2].SemanticName = "NORMAL";
+		inputElements[2].SemanticIndex = 0; // This is the first NORMAL semantic
+		inputElements[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+		inputElements[3].Format = DXGI_FORMAT_R32G32B32_FLOAT; // R32 G32 B32 = float3
+		inputElements[3].SemanticName = "TANGENT";
+		inputElements[3].SemanticIndex = 0; // This is the first TANGENT semantic
 	}
 	
 	// Root Signature
 	{
-		// Describe and serialize the root signature
+		// Define a table of CBV's (constant buffer views)
+		D3D12_DESCRIPTOR_RANGE cbvTable = {};
+		cbvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		cbvTable.NumDescriptors = 1;
+		cbvTable.BaseShaderRegister = 0;
+		cbvTable.RegisterSpace = 0;
+		cbvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+		// Define the root parameter
+		D3D12_ROOT_PARAMETER rootParam = {};
+		rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		rootParam.DescriptorTable.NumDescriptorRanges = 1;
+		rootParam.DescriptorTable.pDescriptorRanges = &cbvTable;
+		// Describe the overall the root signature
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
 		rootSig.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		rootSig.NumParameters = 0;
-		rootSig.pParameters = 0;
+		rootSig.NumParameters = 1;
+		rootSig.pParameters = &rootParam;
 		rootSig.NumStaticSamplers = 0;
 		rootSig.pStaticSamplers = 0;
+
 		ID3DBlob* serializedRootSig = 0;
 		ID3DBlob* errors = 0;
 		D3D12SerializeRootSignature(
@@ -93,6 +112,7 @@ void Game::CreateRootSigAndPipelineState()
 			D3D_ROOT_SIGNATURE_VERSION_1,
 			&serializedRootSig,
 			&errors);
+
 		// Check for errors during serialization
 		if (errors != 0)
 		{
@@ -139,14 +159,11 @@ void Game::CreateRootSigAndPipelineState()
 		psoDesc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
 		psoDesc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
 		psoDesc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-		psoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask =
-			D3D12_COLOR_WRITE_ENABLE_ALL;
+		psoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 		// -- Misc ---
 		psoDesc.SampleMask = 0xffffffff;
 		// Create the pipe state object
-		Graphics::Device->CreateGraphicsPipelineState(
-			&psoDesc,
-			IID_PPV_ARGS(pipelineState.GetAddressOf()));
+		Graphics::Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(pipelineState.GetAddressOf()));
 	}
 	
 	// Set up the viewport and scissor rectangle
@@ -178,49 +195,25 @@ void Game::CreateRootSigAndPipelineState()
 // --------------------------------------------------------
 void Game::CreateGeometry()
 {
-	// Create some temporary variables to represent colors
-	// - Not necessary, just makes things more readable
-	XMFLOAT4 red = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+	cube = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.igme540obj").c_str(), Graphics::Device);
+	cylinder = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.igme540obj").c_str(), Graphics::Device);
+	helix = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.igme540obj").c_str(), Graphics::Device);
+	sphere = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/sphere.igme540obj").c_str(), Graphics::Device);
+	torus = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.igme540obj").c_str(), Graphics::Device);
+	quad = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.igme540obj").c_str(), Graphics::Device);
 
-	// Set up the vertices of the triangle we would like to draw
-	// - We're going to copy this array, exactly as it exists in CPU memory
-	//    over to a Direct3D-controlled data structure on the GPU (the vertex buffer)
-	// - Note: Since we don't have a camera or really any concept of
-	//    a "3d world" yet, we're simply describing positions within the
-	//    bounds of how the rasterizer sees our screen: [-1 to +1] on X and Y
-	// - This means (0,0) is at the very center of the screen.
-	// - These are known as "Normalized Device Coordinates" or "Homogeneous 
-	//    Screen Coords", which are ways to describe a position without
-	//    knowing the exact size (in pixels) of the image/window/etc.  
-	// - Long story short: Resizing the window also resizes the triangle,
-	//    since we're describing the triangle in terms of the window itself
-	Vertex vertices[] =
-	{
-		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), red },
-		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), blue },
-		{ XMFLOAT3(-0.5f, -0.5f, +0.0f), green },
-	};
+	entities.push_back(GameEntity(cube));
+	entities.push_back(GameEntity(cylinder));
+	entities.push_back(GameEntity(helix));
+	entities.push_back(GameEntity(sphere));
+	entities.push_back(GameEntity(torus));
+	entities.push_back(GameEntity(quad));
 
-	// Set up indices, which tell us which vertices to use and in which order
-	// - This is redundant for just 3 vertices, but will be more useful later
-	// - Indices are technically not required if the vertices are in the buffer 
-	//    in the correct order and each one will be used exactly once
-	// - But just to see how it's done...
-	unsigned int indices[] = { 0, 1, 2 };
-
-
-	// Create the two buffers
-	vertexBuffer = Graphics::CreateStaticBuffer(sizeof(Vertex), ARRAYSIZE(vertices), vertices);
-	indexBuffer = Graphics::CreateStaticBuffer(sizeof(unsigned int), ARRAYSIZE(indices), indices);
-	// Set up the views
-	vbView.StrideInBytes = sizeof(Vertex);
-	vbView.SizeInBytes = sizeof(Vertex) * ARRAYSIZE(vertices);
-	vbView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-	ibView.Format = DXGI_FORMAT_R32_UINT;
-	ibView.SizeInBytes = sizeof(unsigned int) * ARRAYSIZE(indices);
-	ibView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+	entities[0].GetTransform().SetPosition(-9, 0, 0);
+	entities[1].GetTransform().SetPosition(-6, 0, 0);
+	entities[2].GetTransform().SetPosition(-3, 0, 0);
+	entities[4].GetTransform().SetPosition(3, 0, 0);
+	entities[5].GetTransform().SetPosition(6, 0, 0);
 }
 
 
@@ -251,6 +244,9 @@ void Game::OnResize()
 		scissorRect.top = 0;
 		scissorRect.right = Window::Width();
 		scissorRect.bottom = Window::Height();
+
+		if (camera.get() != NULL)
+			camera.get()->UpdateProjectionMatrix(viewport.Width / viewport.Height);
 	}
 }
 
@@ -263,6 +259,8 @@ void Game::Update(float deltaTime, float totalTime)
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::KeyDown(VK_ESCAPE))
 		Window::Quit();
+
+	camera.get()->Update(deltaTime);
 }
 
 
@@ -310,16 +308,30 @@ void Game::Draw(float deltaTime, float totalTime)
 		Graphics::CommandList->SetGraphicsRootSignature(rootSignature.Get());
 
 		// Set up other commands for rendering
-		Graphics::CommandList->OMSetRenderTargets(
-			1, &Graphics::RTVHandles[Graphics::SwapChainIndex()], true, &Graphics::DSVHandle);
+		Graphics::CommandList->OMSetRenderTargets(1, &Graphics::RTVHandles[Graphics::SwapChainIndex()], true, &Graphics::DSVHandle);
 		Graphics::CommandList->RSSetViewports(1, &viewport);
 		Graphics::CommandList->RSSetScissorRects(1, &scissorRect);
-		Graphics::CommandList->IASetVertexBuffers(0, 1, &vbView);
-		Graphics::CommandList->IASetIndexBuffer(&ibView);
+
+		Graphics::CommandList->SetDescriptorHeaps(1, Graphics::CBVSRVDescriptorHeap.GetAddressOf());
+
 		Graphics::CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		// Draw
-		Graphics::CommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+		for (GameEntity entity : entities)
+		{
+			//entity.GetMaterial()->pixelShader->SetShaderResourceView("ShadowMap", shadowMap.shadowSRV.Get());
+			//entity.GetMaterial()->pixelShader->SetSamplerState("ShadowSampler", shadowMap.shadowSampler);
+			//entity.GetMaterial()->pixelShader->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
+
+			//entity.GetMaterial()->vertexShader->SetMatrix4x4("lightView", shadowMap.shadowViewMatrix);
+			//entity.GetMaterial()->vertexShader->SetMatrix4x4("lightProjection", shadowMap.shadowProjectionMatrix);
+
+			entity.Draw(camera);
+		}
+
+
+
+		//// Draw
+		//Graphics::CommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 	}
 
 	// Present

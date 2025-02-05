@@ -2,6 +2,12 @@
 
 #include <d3d12.h>
 #include <wrl/client.h>
+#include "Camera.h"
+#include "Mesh.h"
+#include "GameEntity.h"
+
+#include <memory>
+#include <vector>
 
 class Game
 {
@@ -42,5 +48,16 @@ private:
 	// Other graphics data
 	D3D12_VIEWPORT viewport{};
 	D3D12_RECT scissorRect{};
+
+	std::shared_ptr<Camera> camera;
+
+	std::vector<GameEntity> entities;
+
+	std::shared_ptr<Mesh> cube;
+	std::shared_ptr<Mesh> cylinder;
+	std::shared_ptr<Mesh> helix;
+	std::shared_ptr<Mesh> sphere;
+	std::shared_ptr<Mesh> torus;
+	std::shared_ptr<Mesh> quad;
 };
 
