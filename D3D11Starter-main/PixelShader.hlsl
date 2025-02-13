@@ -1,21 +1,10 @@
+#include "Lighting.hlsli"
 
-// Struct representing the data we expect to receive from earlier pipeline stages
-// - Should match the output of our corresponding vertex shader
-// - The name of the struct itself is unimportant
-// - The variable names don't have to match other shaders (just the semantics)
-// - Each variable must have a semantic, which defines its usage
-struct VertexToPixel
-{
-	// Data type
-	//  |
-	//  |   Name          Semantic
-	//  |    |                |
-	//  v    v                v
-    float4 screenPosition : SV_POSITION;
-    float2 uv : TEXCOORD;
-    float3 normal : NORMAL;
-    float3 worldPosition : POSITION;
-};
+Texture2D Albedo : register(t0);
+Texture2D NormalMap : register(t1);
+Texture2D RoughnessMap : register(t2);
+Texture2D MetalnessMap : register(t3);
+SamplerState BasicSampler : register(s0);
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -28,9 +17,21 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-    return float4(1, 1, 1, 1);
+    float3 surfaceColor = float3(1,1,1);
+    
+    float3 unpackedNormal = normalize(NormalMap.Sample(BasicSampler, input.UV).rgb * 2 - 1);
+    
+    float3 albedoColor = pow(Albedo.Sample(BasicSampler, input.UV).rgb, 2.2f);
+    float roughness = RoughnessMap.Sample(BasicSampler, input.UV).r;
+    float metalness = MetalnessMap.Sample(BasicSampler, input.UV).r;
+    float3 specularColor = lerp(F0_NON_METAL, albedoColor.rgb, metalness);
+    
+    input.Normal = normalize(input.Normal);
+    float3 T = normalize(input.Tangent); // Must be normalized here or before
+    T = normalize(T - input.Normal * dot(T, input.Normal)); // Gram-Schmidt assumes T&N are normalized!
+    input.Normal = mul(unpackedNormal, float3x3(T, cross(T, input.Normal), input.Normal)); // Note multiplication order!
+        
+    float3 totalLight = CalcLights(input, surfaceColor.xyz, specularColor, roughness, metalness, 0/*shadowAmount*/);
+ 
+    return float4(pow(surfaceColor.xyz * albedoColor * totalLight, 1.0f / 2.2f), 1);
 }

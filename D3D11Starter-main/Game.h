@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Mesh.h"
 #include "GameEntity.h"
+#include "Lights.h"
 
 #include <memory>
 #include <vector>
@@ -59,5 +60,9 @@ private:
 	std::shared_ptr<Mesh> sphere;
 	std::shared_ptr<Mesh> torus;
 	std::shared_ptr<Mesh> quad;
+
+	std::shared_ptr<Material> mat1;
+
+	std::vector<Light> lights;
 };
 

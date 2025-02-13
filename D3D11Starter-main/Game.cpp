@@ -4,6 +4,7 @@
 #include "Input.h"
 #include "PathHelpers.h"
 #include "Window.h"
+#include "BufferStructs.h"
 
 #include <DirectXMath.h>
 
@@ -13,6 +14,8 @@
 
 // For the DirectX Math library
 using namespace DirectX;
+
+#define PBR_Assets L"../../Assets/PBR/"
 
 // --------------------------------------------------------
 // Called once per program, after the window and graphics API
@@ -24,7 +27,55 @@ void Game::Initialize()
 	entities = std::vector<GameEntity>();
 
 	CreateRootSigAndPipelineState();
+
+	D3D12_CPU_DESCRIPTOR_HANDLE texture = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_albedo.png").c_str());
+	mat1 = std::make_shared<Material>(pipelineState, XMFLOAT3(1, 1, 1), XMFLOAT2(1, 1), XMFLOAT2(0, 0));
+	mat1->AddTexture(texture, 0);
+	mat1->AddTexture(texture, 1);
+	mat1->AddTexture(texture, 2);
+	mat1->AddTexture(texture, 3);
+	mat1->FinalizeMaterial();
+
 	CreateGeometry();
+
+#pragma region Constructing Lights
+	lights = std::vector<Light>();
+
+	Light light3 = Light();
+	light3.Direction = XMFLOAT3(0, -1, -1);
+	light3.Color = XMFLOAT3(1, 1, 1);
+	lights.push_back(light3);
+
+	Light light = Light();
+	light.Type = LIGHT_TYPE_POINT;
+	light.Color = XMFLOAT3(1, 0, 0);
+	light.Position = XMFLOAT3(0, 0, 0);
+	light.Range = 10;
+	light.Intensity = 2;
+
+	lights.push_back(light);
+
+	Light light2 = Light();
+	light2.Type = LIGHT_TYPE_POINT;
+	light2.Color = XMFLOAT3(0, 0, 1);
+	light2.Position = XMFLOAT3(-9, 0, 0);
+	light2.Range = 10;
+	light2.Intensity = 2;
+
+	lights.push_back(light2);
+
+	Light light4 = light3;
+	light4.Direction = XMFLOAT3(-1, 0, 0);
+	light4.Color = XMFLOAT3(1, 1, 0);
+
+	lights.push_back(light4);
+
+	Light light5 = light3;
+	light5.Direction = XMFLOAT3(0, 0, -1);
+	light5.Color = XMFLOAT3(0, 1, 1);
+
+	lights.push_back(light5);
+#pragma endregion
 }
 
 
@@ -84,26 +135,62 @@ void Game::CreateRootSigAndPipelineState()
 	
 	// Root Signature
 	{
-		// Define a table of CBV's (constant buffer views)
-		D3D12_DESCRIPTOR_RANGE cbvTable = {};
-		cbvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-		cbvTable.NumDescriptors = 1;
-		cbvTable.BaseShaderRegister = 0;
-		cbvTable.RegisterSpace = 0;
-		cbvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-		// Define the root parameter
-		D3D12_ROOT_PARAMETER rootParam = {};
-		rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-		rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-		rootParam.DescriptorTable.NumDescriptorRanges = 1;
-		rootParam.DescriptorTable.pDescriptorRanges = &cbvTable;
-		// Describe the overall the root signature
+		// Describe the range of CBVs needed for the vertex shader
+		D3D12_DESCRIPTOR_RANGE cbvRangeVS = {};
+		cbvRangeVS.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		cbvRangeVS.NumDescriptors = 1;
+		cbvRangeVS.BaseShaderRegister = 0;
+		cbvRangeVS.RegisterSpace = 0;
+		cbvRangeVS.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+		// Describe the range of CBVs needed for the pixel shader
+		D3D12_DESCRIPTOR_RANGE cbvRangePS = {};
+		cbvRangePS.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		cbvRangePS.NumDescriptors = 1;
+		cbvRangePS.BaseShaderRegister = 0;
+		cbvRangePS.RegisterSpace = 0;
+		cbvRangePS.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+		// Create a range of SRV's for textures
+		D3D12_DESCRIPTOR_RANGE srvRange = {};
+		srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		srvRange.NumDescriptors = 4; // Set to max number of textures at once (match pixel shader!)
+		srvRange.BaseShaderRegister = 0; // Starts at s0 (match pixel shader!)
+		srvRange.RegisterSpace = 0;
+		srvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+		// Create the root parameters
+		D3D12_ROOT_PARAMETER rootParams[3] = {};
+		// CBV table param for vertex shader
+		rootParams[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParams[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		rootParams[0].DescriptorTable.NumDescriptorRanges = 1;
+		rootParams[0].DescriptorTable.pDescriptorRanges = &cbvRangeVS;
+		// CBV table param for pixel shader
+		rootParams[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParams[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParams[1].DescriptorTable.NumDescriptorRanges = 1;
+		rootParams[1].DescriptorTable.pDescriptorRanges = &cbvRangePS;
+		// SRV table param
+		rootParams[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParams[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParams[2].DescriptorTable.NumDescriptorRanges = 1;
+		rootParams[2].DescriptorTable.pDescriptorRanges = &srvRange;
+		// Create a single static sampler (available to all pixel shaders at the same slot)
+		D3D12_STATIC_SAMPLER_DESC anisoWrap = {};
+		anisoWrap.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		anisoWrap.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		anisoWrap.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		anisoWrap.Filter = D3D12_FILTER_ANISOTROPIC;
+		anisoWrap.MaxAnisotropy = 16;
+		anisoWrap.MaxLOD = D3D12_FLOAT32_MAX;
+		anisoWrap.ShaderRegister = 0; // register(s0)
+		anisoWrap.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		D3D12_STATIC_SAMPLER_DESC samplers[] = { anisoWrap };
+		// Describe the full root signature
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
 		rootSig.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		rootSig.NumParameters = 1;
-		rootSig.pParameters = &rootParam;
-		rootSig.NumStaticSamplers = 0;
-		rootSig.pStaticSamplers = 0;
+		rootSig.NumParameters = ARRAYSIZE(rootParams);
+		rootSig.pParameters = rootParams;
+		rootSig.NumStaticSamplers = ARRAYSIZE(samplers);
+		rootSig.pStaticSamplers = samplers;
 
 		ID3DBlob* serializedRootSig = 0;
 		ID3DBlob* errors = 0;
@@ -202,12 +289,12 @@ void Game::CreateGeometry()
 	torus = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.igme540obj").c_str(), Graphics::Device);
 	quad = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.igme540obj").c_str(), Graphics::Device);
 
-	entities.push_back(GameEntity(cube));
-	entities.push_back(GameEntity(cylinder));
-	entities.push_back(GameEntity(helix));
-	entities.push_back(GameEntity(sphere));
-	entities.push_back(GameEntity(torus));
-	entities.push_back(GameEntity(quad));
+	entities.push_back(GameEntity(cube, mat1));
+	entities.push_back(GameEntity(cylinder, mat1));
+	entities.push_back(GameEntity(helix, mat1));
+	entities.push_back(GameEntity(sphere, mat1));
+	entities.push_back(GameEntity(torus, mat1));
+	entities.push_back(GameEntity(quad, mat1));
 
 	entities[0].GetTransform().SetPosition(-9, 0, 0);
 	entities[1].GetTransform().SetPosition(-6, 0, 0);
@@ -326,12 +413,29 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		for (GameEntity entity : entities)
 		{
-			//entity.GetMaterial()->pixelShader->SetShaderResourceView("ShadowMap", shadowMap.shadowSRV.Get());
-			//entity.GetMaterial()->pixelShader->SetSamplerState("ShadowSampler", shadowMap.shadowSampler);
-			//entity.GetMaterial()->pixelShader->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
+			std::shared_ptr<Material> mat = entity.GetMaterial();
+			Graphics::CommandList->SetPipelineState(mat->GetPipelineState().Get());
+			// Set the SRV descriptor handle for this material's textures
+			// Note: This assumes that descriptor table 2 is for textures (as per our root sig)
+			Graphics::CommandList->SetGraphicsRootDescriptorTable(2, mat->GetFinalGPUHandleForSRVs());
 
-			//entity.GetMaterial()->vertexShader->SetMatrix4x4("lightView", shadowMap.shadowViewMatrix);
-			//entity.GetMaterial()->vertexShader->SetMatrix4x4("lightProjection", shadowMap.shadowProjectionMatrix);
+			// Pixel shader data and cbuffer setup
+			{
+				PixelShaderExternalData psData = {};
+				psData.uvScale = mat->GetUVScale();
+				psData.uvOffset = mat->GetUVOffset();
+				psData.cameraPos = camera->GetTransform().GetPosition();
+				psData.lightCount = lights.size();
+				memcpy(psData.lights, &lights[0], sizeof(Light) * lights.size());
+				// Send this to a chunk of the constant buffer heap
+				// and grab the GPU handle for it so we can set it for this draw
+				D3D12_GPU_DESCRIPTOR_HANDLE cbHandlePS = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle((void*)(&psData), sizeof(PixelShaderExternalData));
+				// Set this constant buffer handle
+				// Note: This assumes that descriptor table 1 is the
+				// place to put this particular descriptor. This
+				// is based on how we set up our root signature.
+				Graphics::CommandList->SetGraphicsRootDescriptorTable(1, cbHandlePS);
+			}
 
 			entity.Draw(camera);
 		}
