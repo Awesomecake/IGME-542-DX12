@@ -38,6 +38,20 @@ void Game::Initialize()
 	mat1->AddTexture(texture, 3);
 	mat1->FinalizeMaterial();
 
+	mat2 = std::make_shared<Material>(XMFLOAT3(0.5, 0, 0), XMFLOAT2(1, 1), XMFLOAT2(0, 0));
+	mat2->AddTexture(texture, 0);
+	mat2->AddTexture(texture, 1);
+	mat2->AddTexture(texture, 2);
+	mat2->AddTexture(texture, 3);
+	mat2->FinalizeMaterial();
+
+	mat3 = std::make_shared<Material>(XMFLOAT3(0, 0, 0.5), XMFLOAT2(1, 1), XMFLOAT2(0, 0));
+	mat3->AddTexture(texture, 0);
+	mat3->AddTexture(texture, 1);
+	mat3->AddTexture(texture, 2);
+	mat3->AddTexture(texture, 3);
+	mat3->FinalizeMaterial();
+
 	CreateGeometry();
 
 	// Finalize any initialization and wait for the GPU
@@ -113,11 +127,11 @@ void Game::CreateGeometry()
 	quad = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.igme540obj").c_str(), Graphics::Device);
 
 	entities.push_back(GameEntity(cube, mat1));
-	entities.push_back(GameEntity(cylinder, mat1));
-	entities.push_back(GameEntity(helix, mat1));
+	entities.push_back(GameEntity(cylinder, mat2));
+	entities.push_back(GameEntity(helix, mat3));
 	entities.push_back(GameEntity(sphere, mat1));
-	entities.push_back(GameEntity(torus, mat1));
-	entities.push_back(GameEntity(quad, mat1));
+	entities.push_back(GameEntity(torus, mat2));
+	entities.push_back(GameEntity(quad, mat3));
 
 	entities[0].GetTransform().SetPosition(-9, 0, 0);
 	entities[1].GetTransform().SetPosition(-6, 0, 0);

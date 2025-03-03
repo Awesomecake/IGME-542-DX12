@@ -57,6 +57,8 @@ private:
 	std::shared_ptr<Mesh> quad;
 
 	std::shared_ptr<Material> mat1;
+	std::shared_ptr<Material> mat2;
+	std::shared_ptr<Material> mat3;
 
 	std::vector<Light> lights;
 };
