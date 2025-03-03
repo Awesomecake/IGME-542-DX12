@@ -40,14 +40,13 @@ void Game::Initialize()
 
 	CreateGeometry();
 
-	// Create a BLAS for a single mesh, then the TLAS for our “scene”
-	RayTracing::CreateBottomLevelAccelerationStructureForMesh(sphere.get());
-	RayTracing::CreateTopLevelAccelerationStructureForScene();
 	// Finalize any initialization and wait for the GPU
 	// before proceeding to the game loop
 	Graphics::CloseAndExecuteCommandList();
 	Graphics::WaitForGPU();
 	Graphics::ResetAllocatorAndCommandList();
+
+	RayTracing::CreateTopLevelAccelerationStructureForScene(entities);
 
 #pragma region Constructing Lights
 	lights = std::vector<Light>();
@@ -179,10 +178,10 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[0].GetTransform().Rotate(deltaTime, 0, 0);
 	entities[5].GetTransform().Rotate(0, deltaTime, 0);
 
-	entities[1].GetTransform().MoveAbsolute(0, deltaTime * cos(totalTime), 0);
-	entities[2].GetTransform().MoveAbsolute(0, deltaTime * -cos(-totalTime), 0);
-	entities[3].GetTransform().MoveAbsolute(0,0,deltaTime * cos(totalTime));
-	entities[4].GetTransform().MoveAbsolute(0,0,deltaTime * -cos(-totalTime));
+	entities[1].GetTransform().MoveAbsolute(0, deltaTime * cosf(totalTime), 0);
+	entities[2].GetTransform().MoveAbsolute(0, deltaTime * -cosf(-totalTime), 0);
+	entities[3].GetTransform().MoveAbsolute(0,0,deltaTime * cosf(totalTime));
+	entities[4].GetTransform().MoveAbsolute(0,0,deltaTime * -cosf(-totalTime));
 }
 
 
@@ -193,6 +192,7 @@ void Game::Draw(float deltaTime, float totalTime)
 {
 	// Grab the current back buffer for this frame
 	Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer = Graphics::BackBuffers[Graphics::SwapChainIndex()];
+	RayTracing::CreateTopLevelAccelerationStructureForScene(entities);
 
 	// Rendering here!
 	{

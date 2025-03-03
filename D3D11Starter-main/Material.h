@@ -6,15 +6,14 @@
 class Material
 {
 public:
-	Material();
 	Material(DirectX::XMFLOAT3 _colorTint, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset);
 	D3D12_GPU_DESCRIPTOR_HANDLE GetFinalGPUHandleForSRVs();
 	void AddTexture(D3D12_CPU_DESCRIPTOR_HANDLE srv, int slot);
 	void FinalizeMaterial();
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> GetPipelineState();
 	DirectX::XMFLOAT2 GetUVScale();
 	DirectX::XMFLOAT2 GetUVOffset();
+	DirectX::XMFLOAT3 GetColorTint();
 
 private:
 	DirectX::XMFLOAT3 colorTint;

@@ -4,12 +4,22 @@
 #include <wrl/client.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "Mesh.h"
 #include "Camera.h"
+#include "GameEntity.h"
 
 namespace RayTracing
 {
+	// --- CONSTANTS ---
+	// This represents the maximum number of hit groups
+	// in our shader table, each of which corresponds to
+	// a unique combination of geometry & hit shader.
+	// In a simple app, this is effectively the maximum
+	// number of unique mesh BLAS's.
+	const unsigned int MaxHitGroupsInShaderTable = 1000;
+
 	// --- GLOBAL VARS ---
 	// Raytracing-specific versions of base DX12 objects
 	inline Microsoft::WRL::ComPtr<ID3D12Device5> DXRDevice;
@@ -35,7 +45,6 @@ namespace RayTracing
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> BLASScratchBuffer;
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> TLASInstanceDescBuffer;
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> TLAS;
-	inline Microsoft::WRL::ComPtr<ID3D12Resource> BLAS;
 
 	// Actual output resource
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> RaytracingOutput;
@@ -60,8 +69,8 @@ namespace RayTracing
 		Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer);
 
 	// Helper functions for each initalization step
-	void CreateBottomLevelAccelerationStructureForMesh(Mesh* mesh);
-	void CreateTopLevelAccelerationStructureForScene();
+	MeshRaytracingData CreateBottomLevelAccelerationStructureForMesh(Mesh* mesh);
+	void CreateTopLevelAccelerationStructureForScene(std::vector<GameEntity> entities);
 	void CreateRaytracingRootSignatures();
 	void CreateRaytracingPipelineState(std::wstring raytracingShaderLibraryFile);
 	void CreateShaderTable();

@@ -3,6 +3,14 @@
 #include <d3d12.h>
 #include "Vertex.h"
 
+struct MeshRaytracingData
+{
+	D3D12_GPU_DESCRIPTOR_HANDLE IndexBufferSRV{ };
+	D3D12_GPU_DESCRIPTOR_HANDLE VertexBufferSRV{ };
+	Microsoft::WRL::ComPtr<ID3D12Resource> BLAS;
+	unsigned int HitGroupIndex = 0;
+};
+
 class Mesh
 {
 private:
@@ -11,6 +19,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer;
 	D3D12_INDEX_BUFFER_VIEW ibView{};
 	unsigned int indexCount;
+	MeshRaytracingData raytracingData;
 
 	void CreateBuffers(Vertex* vertices, int vertexNum, unsigned int* indices, Microsoft::WRL::ComPtr<ID3D12Device> device);
 public:
@@ -26,5 +35,6 @@ public:
 	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView();
 	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 	unsigned int GetIndexCount();
+	MeshRaytracingData GetRaytracingData() { return raytracingData; }
 };
 

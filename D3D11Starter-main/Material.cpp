@@ -1,11 +1,6 @@
 #include "Material.h"
 #include "Graphics.h"
 
-Material::Material()
-{
-
-}
-
 Material::Material( DirectX::XMFLOAT3 _colorTint, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset) 
 { 
 	colorTint = _colorTint;
@@ -27,6 +22,11 @@ DirectX::XMFLOAT2 Material::GetUVScale()
 DirectX::XMFLOAT2 Material::GetUVOffset()
 {
 	return uvOffset;
+}
+
+DirectX::XMFLOAT3 Material::GetColorTint()
+{
+	return colorTint;
 }
 
 //Register SRV into Slot - Currently only 4 slots available
