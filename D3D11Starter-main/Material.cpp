@@ -6,9 +6,8 @@ Material::Material()
 
 }
 
-Material::Material(Microsoft::WRL::ComPtr<ID3D12PipelineState> _pipelineState, DirectX::XMFLOAT3 _colorTint, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset) 
+Material::Material( DirectX::XMFLOAT3 _colorTint, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset) 
 { 
-	pipelineState = _pipelineState;
 	colorTint = _colorTint;
 	uvScale = _uvScale;
 	uvOffset = _uvOffset;
@@ -18,11 +17,6 @@ Material::Material(Microsoft::WRL::ComPtr<ID3D12PipelineState> _pipelineState, D
 D3D12_GPU_DESCRIPTOR_HANDLE Material::GetFinalGPUHandleForSRVs()
 {
 	return finalGPUHandleForSRVs;
-}
-
-Microsoft::WRL::ComPtr<ID3D12PipelineState> Material::GetPipelineState()
-{
-	return pipelineState;
 }
 
 DirectX::XMFLOAT2 Material::GetUVScale()

@@ -29,16 +29,11 @@ private:
 
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void CreateGeometry();
-	void CreateRootSigAndPipelineState();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
 	//     Component Object Model, which DirectX objects do
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
-
-	// Pipeline
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
 
 	// Geometry
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer;

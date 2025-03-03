@@ -255,15 +255,26 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Mesh::GetVertexBuffer()
 	return vertexBuffer;
 };
 
+D3D12_VERTEX_BUFFER_VIEW Mesh::GetVertexBufferView()
+{
+	return vbView;
+}
+
 Microsoft::WRL::ComPtr<ID3D12Resource> Mesh::GetIndexBuffer()
 {
 	return indexBuffer;
 };
 
+D3D12_INDEX_BUFFER_VIEW Mesh::GetIndexBufferView()
+{
+	return ibView;
+}
+
 unsigned int Mesh::GetIndexCount()
 {
 	return indexCount;
 };
+
 
 void Mesh::Draw()
 {

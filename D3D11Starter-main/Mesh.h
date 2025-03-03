@@ -21,7 +21,9 @@ public:
 	void Draw();
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> GetVertexBuffer();
+	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();
 	Microsoft::WRL::ComPtr<ID3D12Resource> GetIndexBuffer();
+	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView();
 	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 	unsigned int GetIndexCount();
 };
