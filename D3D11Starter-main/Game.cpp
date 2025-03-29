@@ -31,21 +31,21 @@ void Game::Initialize()
 	entities = std::vector<GameEntity>();
 
 	D3D12_CPU_DESCRIPTOR_HANDLE texture = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_albedo.png").c_str());
-	mat1 = std::make_shared<Material>(XMFLOAT3(1, 1, 1), XMFLOAT2(1, 1), XMFLOAT2(0, 0));
+	mat1 = std::make_shared<Material>(XMFLOAT3(1, 1, 1), 0, XMFLOAT2(1, 1), XMFLOAT2(0, 0));
 	mat1->AddTexture(texture, 0);
 	mat1->AddTexture(texture, 1);
 	mat1->AddTexture(texture, 2);
 	mat1->AddTexture(texture, 3);
 	mat1->FinalizeMaterial();
 
-	mat2 = std::make_shared<Material>(XMFLOAT3(0.5, 0, 0), XMFLOAT2(1, 1), XMFLOAT2(0, 0));
+	mat2 = std::make_shared<Material>(XMFLOAT3(0.5, 0, 0), 1, XMFLOAT2(1, 1), XMFLOAT2(0, 0));
 	mat2->AddTexture(texture, 0);
 	mat2->AddTexture(texture, 1);
 	mat2->AddTexture(texture, 2);
 	mat2->AddTexture(texture, 3);
 	mat2->FinalizeMaterial();
 
-	mat3 = std::make_shared<Material>(XMFLOAT3(0, 0, 0.5), XMFLOAT2(1, 1), XMFLOAT2(0, 0));
+	mat3 = std::make_shared<Material>(XMFLOAT3(0.5, 0.5, 0.5), 0.1f, XMFLOAT2(1, 1), XMFLOAT2(0, 0));
 	mat3->AddTexture(texture, 0);
 	mat3->AddTexture(texture, 1);
 	mat3->AddTexture(texture, 2);

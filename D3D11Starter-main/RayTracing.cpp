@@ -285,7 +285,7 @@ void RayTracing::CreateRaytracingPipelineState(std::wstring raytracingShaderLibr
 
 	// === Shader config (payload) ===
 	D3D12_RAYTRACING_SHADER_CONFIG shaderConfigDesc = {};
-	shaderConfigDesc.MaxPayloadSizeInBytes = sizeof(DirectX::XMFLOAT3);	// Assuming a float3 color for now
+	shaderConfigDesc.MaxPayloadSizeInBytes = sizeof(DirectX::XMFLOAT3) + sizeof(unsigned int)*2;	// Assuming a float3 color for now
 	shaderConfigDesc.MaxAttributeSizeInBytes = sizeof(DirectX::XMFLOAT2); // Assuming a float2 for barycentric coords for now
 
 	D3D12_STATE_SUBOBJECT shaderConfigSubObj = {};
@@ -688,7 +688,8 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<GameEnt
 		// - mesh index tells us which cbuffer
 		// - instance ID tells us which instance in that cbuffer
 		DirectX::XMFLOAT3 c = entities[i].GetMaterial()->GetColorTint();
-		entityData[meshBlasIndex].color[instDesc.InstanceID] = DirectX::XMFLOAT4(c.x, c.y, c.z, 1);
+		float roughness = entities[i].GetMaterial()->GetRoughness();
+		entityData[meshBlasIndex].color[instDesc.InstanceID] = DirectX::XMFLOAT4(c.x, c.y, c.z, roughness);
 
 		// On to the next instance for this mesh
 		instanceIDs[meshBlasIndex]++;
@@ -846,10 +847,8 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 
 		// Set the global root sig so we can also set descriptor tables
 		DXRCommandList->SetComputeRootSignature(GlobalRaytracingRootSig.Get());
-		DXRCommandList->SetComputeRootDescriptorTable(0,			// First table is just output UAV
-			RaytracingOutputUAV_GPU);
-		DXRCommandList->SetComputeRootShaderResourceView(1,			// Second is SRV for accel structure (as root SRV, no table needed)
-			TLAS->GetGPUVirtualAddress());
+		DXRCommandList->SetComputeRootDescriptorTable(0, RaytracingOutputUAV_GPU);			// First table is just output UAV
+		DXRCommandList->SetComputeRootShaderResourceView(1, TLAS->GetGPUVirtualAddress());			// Second is SRV for accel structure (as root SRV, no table needed)
 		DXRCommandList->SetComputeRootDescriptorTable(2, cbuffer);	// Third is CBV
 
 		// Dispatch rays

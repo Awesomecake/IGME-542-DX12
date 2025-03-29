@@ -6,7 +6,7 @@
 class Material
 {
 public:
-	Material(DirectX::XMFLOAT3 _colorTint, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset);
+	Material(DirectX::XMFLOAT3 _colorTint, float _roughness, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset);
 	D3D12_GPU_DESCRIPTOR_HANDLE GetFinalGPUHandleForSRVs();
 	void AddTexture(D3D12_CPU_DESCRIPTOR_HANDLE srv, int slot);
 	void FinalizeMaterial();
@@ -14,11 +14,15 @@ public:
 	DirectX::XMFLOAT2 GetUVScale();
 	DirectX::XMFLOAT2 GetUVOffset();
 	DirectX::XMFLOAT3 GetColorTint();
+	float GetRoughness();
+
+	void SetRoughness(float roughness);
 
 private:
 	DirectX::XMFLOAT3 colorTint;
 	DirectX::XMFLOAT2 uvScale;
 	DirectX::XMFLOAT2 uvOffset;
+	float roughness;
 	bool finalized;
 
 	//D3D12_GPU_DESCRIPTOR_HANDLE for the first of srv in the heap

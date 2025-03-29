@@ -1,9 +1,10 @@
 #include "Material.h"
 #include "Graphics.h"
 
-Material::Material( DirectX::XMFLOAT3 _colorTint, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset) 
+Material::Material( DirectX::XMFLOAT3 _colorTint, float _roughness, DirectX::XMFLOAT2 _uvScale, DirectX::XMFLOAT2 _uvOffset) 
 { 
 	colorTint = _colorTint;
+	roughness = _roughness;
 	uvScale = _uvScale;
 	uvOffset = _uvOffset;
 	finalized = false;
@@ -27,6 +28,16 @@ DirectX::XMFLOAT2 Material::GetUVOffset()
 DirectX::XMFLOAT3 Material::GetColorTint()
 {
 	return colorTint;
+}
+
+float Material::GetRoughness()
+{
+	return roughness;
+}
+
+void Material::SetRoughness(float _roughness)
+{
+	roughness = _roughness;
 }
 
 //Register SRV into Slot - Currently only 4 slots available
