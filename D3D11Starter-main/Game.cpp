@@ -30,27 +30,101 @@ void Game::Initialize()
 	camera = std::make_shared<Camera>(viewport.Width / viewport.Height, 45.f, XMFLOAT3(0.5, 0, -5));
 	entities = std::vector<GameEntity>();
 
-	D3D12_CPU_DESCRIPTOR_HANDLE texture = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_albedo.png").c_str());
-	mat1 = std::make_shared<Material>(XMFLOAT3(1, 1, 1), 0, XMFLOAT2(1, 1), XMFLOAT2(0, 0));
-	mat1->AddTexture(texture, 0);
-	mat1->AddTexture(texture, 1);
-	mat1->AddTexture(texture, 2);
-	mat1->AddTexture(texture, 3);
-	mat1->FinalizeMaterial();
+	// Load textures
+	D3D12_CPU_DESCRIPTOR_HANDLE cobblestoneAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_albedo.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE cobblestoneNormals = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_normals.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE cobblestoneRoughness = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_roughness.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE cobblestoneMetal = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_metal.png").c_str());
 
-	mat2 = std::make_shared<Material>(XMFLOAT3(0.5, 0, 0), 1, XMFLOAT2(1, 1), XMFLOAT2(0, 0));
-	mat2->AddTexture(texture, 0);
-	mat2->AddTexture(texture, 1);
-	mat2->AddTexture(texture, 2);
-	mat2->AddTexture(texture, 3);
-	mat2->FinalizeMaterial();
+	D3D12_CPU_DESCRIPTOR_HANDLE bronzeAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "bronze_albedo.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE bronzeNormals = Graphics::LoadTexture(FixPath(PBR_Assets "bronze_normals.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE bronzeRoughness = Graphics::LoadTexture(FixPath(PBR_Assets "bronze_roughness.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE bronzeMetal = Graphics::LoadTexture(FixPath(PBR_Assets "bronze_metal.png").c_str());
 
-	mat3 = std::make_shared<Material>(XMFLOAT3(0.5, 0.5, 0.5), 0.1f, XMFLOAT2(1, 1), XMFLOAT2(0, 0));
-	mat3->AddTexture(texture, 0);
-	mat3->AddTexture(texture, 1);
-	mat3->AddTexture(texture, 2);
-	mat3->AddTexture(texture, 3);
-	mat3->FinalizeMaterial();
+	D3D12_CPU_DESCRIPTOR_HANDLE scratchedAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "scratched_albedo.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE scratchedNormals = Graphics::LoadTexture(FixPath(PBR_Assets "scratched_normals.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE scratchedRoughness = Graphics::LoadTexture(FixPath(PBR_Assets "scratched_roughness.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE scratchedMetal = Graphics::LoadTexture(FixPath(PBR_Assets "scratched_metal.png").c_str());
+
+	D3D12_CPU_DESCRIPTOR_HANDLE woodAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "wood_albedo.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE woodNormals = Graphics::LoadTexture(FixPath(PBR_Assets "wood_normals.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE woodRoughness = Graphics::LoadTexture(FixPath(PBR_Assets "wood_roughness.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE woodMetal = Graphics::LoadTexture(FixPath(PBR_Assets "wood_metal.png").c_str());
+
+	D3D12_CPU_DESCRIPTOR_HANDLE floorAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "floor_albedo.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE floorNormals = Graphics::LoadTexture(FixPath(PBR_Assets "floor_normals.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE floorRoughness = Graphics::LoadTexture(FixPath(PBR_Assets "floor_roughness.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE floorMetal = Graphics::LoadTexture(FixPath(PBR_Assets "floor_metal.png").c_str());
+
+	D3D12_CPU_DESCRIPTOR_HANDLE paintAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "paint_albedo.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE paintNormals = Graphics::LoadTexture(FixPath(PBR_Assets "paint_normals.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE paintRoughness = Graphics::LoadTexture(FixPath(PBR_Assets "paint_roughness.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE paintMetal = Graphics::LoadTexture(FixPath(PBR_Assets "paint_metal.png").c_str());
+
+	D3D12_CPU_DESCRIPTOR_HANDLE ironAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "rough_albedo.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE ironNormals = Graphics::LoadTexture(FixPath(PBR_Assets "rough_normals.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE ironRoughness = Graphics::LoadTexture(FixPath(PBR_Assets "rough_roughness.png").c_str());
+	D3D12_CPU_DESCRIPTOR_HANDLE ironMetal = Graphics::LoadTexture(FixPath(PBR_Assets "rough_metal.png").c_str());
+
+	// Create materials
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState{};
+	// Create materials
+	// Note: Samplers are handled by a single static sampler in the
+	// root signature for this demo, rather than per-material
+	greyDiffuse = std::make_shared<Material>(XMFLOAT3(0.5f, 0.5f, 0.5f), 1.0f, 0.0f);
+	darkGrey = std::make_shared<Material>(XMFLOAT3(0.25f, 0.25f, 0.25f), 0.0f, 1.0f);
+	metal = std::make_shared<Material>(XMFLOAT3(0.5f, 0.6f, 0.7f), 0.0f, 1.0f);
+
+	cobblestone = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
+	scratched = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
+	bronze = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
+	floor = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
+	paint = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
+	iron = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
+	wood = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
+
+	// Set up textures
+	cobblestone->AddTexture(cobblestoneAlbedo, 0);
+	cobblestone->AddTexture(cobblestoneNormals, 1);
+	cobblestone->AddTexture(cobblestoneRoughness, 2);
+	cobblestone->AddTexture(cobblestoneMetal, 3);
+	cobblestone->FinalizeMaterial();
+
+	scratched->AddTexture(scratchedAlbedo, 0);
+	scratched->AddTexture(scratchedNormals, 1);
+	scratched->AddTexture(scratchedRoughness, 2);
+	scratched->AddTexture(scratchedMetal, 3);
+	scratched->FinalizeMaterial();
+
+	bronze->AddTexture(bronzeAlbedo, 0);
+	bronze->AddTexture(bronzeNormals, 1);
+	bronze->AddTexture(bronzeRoughness, 2);
+	bronze->AddTexture(bronzeMetal, 3);
+	bronze->FinalizeMaterial();
+
+	floor->AddTexture(floorAlbedo, 0);
+	floor->AddTexture(floorNormals, 1);
+	floor->AddTexture(floorRoughness, 2);
+	floor->AddTexture(floorMetal, 3);
+	floor->FinalizeMaterial();
+
+	paint->AddTexture(paintAlbedo, 0);
+	paint->AddTexture(paintNormals, 1);
+	paint->AddTexture(paintRoughness, 2);
+	paint->AddTexture(paintMetal, 3);
+	paint->FinalizeMaterial();
+
+	wood->AddTexture(woodAlbedo, 0);
+	wood->AddTexture(woodNormals, 1);
+	wood->AddTexture(woodRoughness, 2);
+	wood->AddTexture(woodMetal, 3);
+	wood->FinalizeMaterial();
+
+	iron->AddTexture(ironAlbedo, 0);
+	iron->AddTexture(ironNormals, 1);
+	iron->AddTexture(ironRoughness, 2);
+	iron->AddTexture(ironMetal, 3);
+	iron->FinalizeMaterial();
 
 	CreateGeometry();
 
@@ -126,12 +200,12 @@ void Game::CreateGeometry()
 	torus = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.igme540obj").c_str(), Graphics::Device);
 	quad = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.igme540obj").c_str(), Graphics::Device);
 
-	entities.push_back(GameEntity(cube, mat1));
-	entities.push_back(GameEntity(cylinder, mat2));
-	entities.push_back(GameEntity(helix, mat3));
-	entities.push_back(GameEntity(sphere, mat1));
-	entities.push_back(GameEntity(torus, mat2));
-	entities.push_back(GameEntity(quad, mat3));
+	entities.push_back(GameEntity(cube, cobblestone));
+	entities.push_back(GameEntity(cylinder, scratched));
+	entities.push_back(GameEntity(helix, bronze));
+	entities.push_back(GameEntity(sphere, floor));
+	entities.push_back(GameEntity(torus, paint));
+	entities.push_back(GameEntity(quad, iron));
 
 	entities[0].GetTransform().SetPosition(-9, 0, 0);
 	entities[1].GetTransform().SetPosition(-6, 0, 0);
