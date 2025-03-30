@@ -279,16 +279,6 @@ unsigned int Mesh::GetIndexCount()
 	return indexCount;
 };
 
-
-void Mesh::Draw()
-{
-	Graphics::CommandList->IASetVertexBuffers(0, 1, &vbView);
-	Graphics::CommandList->IASetIndexBuffer(&ibView);
-
-	// Draw
-	Graphics::CommandList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
-}
-
 // --------------------------------------------------------
 // Calculates the tangents of the vertices in a mesh
 // - Code originally adapted from: http://www.terathon.com/code/tangent.html

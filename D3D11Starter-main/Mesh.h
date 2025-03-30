@@ -27,7 +27,6 @@ public:
 	Mesh(const wchar_t* filename, Microsoft::WRL::ComPtr<ID3D12Device> device);
 	Mesh(Vertex vertices[], unsigned int vertexNum, unsigned int indices[], unsigned int indexNum, Microsoft::WRL::ComPtr<ID3D12Device> device);
 	~Mesh();
-	void Draw();
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> GetVertexBuffer();
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();

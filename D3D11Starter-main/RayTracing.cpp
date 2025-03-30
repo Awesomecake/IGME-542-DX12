@@ -648,7 +648,7 @@ MeshRaytracingData RayTracing::CreateBottomLevelAccelerationStructureForMesh(Mes
 // up of one or more BLAS instances, each with their own
 // unique transform.  This demo uses exactly one BLAS instance.
 // --------------------------------------------------------
-void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<GameEntity> entities)
+void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::shared_ptr<GameEntity>> entities)
 {
 	// Don't bother if DXR isn't available or the AS is finalized already
 	if (!dxrAvailable)
@@ -667,11 +667,11 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<GameEnt
 	for (size_t i = 0; i < entities.size(); i++)
 	{
 		// Grab this entity's transform and transpose to column major
-		DirectX::XMFLOAT4X4 transform = entities[i].GetTransform().GetWorldMatrix();
+		DirectX::XMFLOAT4X4 transform = entities[i]->GetTransform()->GetWorldMatrix();
 		XMStoreFloat4x4(&transform, XMMatrixTranspose(XMLoadFloat4x4(&transform)));
 
 		// Grab this mesh's index in the shader table
-		std::shared_ptr<Mesh> mesh = entities[i].GetMesh();
+		std::shared_ptr<Mesh> mesh = entities[i]->GetMesh();
 		unsigned int meshBlasIndex = mesh->GetRaytracingData().HitGroupIndex;
 
 		// Create this description and add to our overall set of descriptions
@@ -687,8 +687,8 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<GameEnt
 		// Set up the entity data for this entity, too
 		// - mesh index tells us which cbuffer
 		// - instance ID tells us which instance in that cbuffer
-		DirectX::XMFLOAT3 c = entities[i].GetMaterial()->GetColorTint();
-		float roughness = entities[i].GetMaterial()->GetRoughness();
+		DirectX::XMFLOAT3 c = entities[i]->GetMaterial()->GetColorTint();
+		float roughness = entities[i]->GetMaterial()->GetRoughness();
 		entityData[meshBlasIndex].color[instDesc.InstanceID] = DirectX::XMFLOAT4(c.x, c.y, c.z, roughness);
 
 		// On to the next instance for this mesh
@@ -824,7 +824,7 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 
 	// Grab and fill a constant buffer
 	RaytracingSceneData sceneData = {};
-	sceneData.cameraPosition = camera->GetTransform().GetPosition();
+	sceneData.cameraPosition = camera->GetTransform()->GetPosition();
 
 	DirectX::XMFLOAT4X4 view = camera->GetViewMatrix();
 	DirectX::XMFLOAT4X4 proj = camera->GetProjectionMatrix();

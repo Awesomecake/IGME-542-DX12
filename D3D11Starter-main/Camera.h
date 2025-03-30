@@ -2,11 +2,12 @@
 #include "Input.h"
 #include "Transform.h"
 #include <DirectXMath.h>
+#include <memory>
 
 class Camera
 {
 private:
-	Transform transform;
+	std::shared_ptr<Transform> transform;
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projMatrix;
 
@@ -22,7 +23,7 @@ public:
 
 	DirectX::XMFLOAT4X4 GetViewMatrix();
 	DirectX::XMFLOAT4X4 GetProjectionMatrix();
-	Transform GetTransform();
+	std::shared_ptr<Transform> GetTransform();
 	float GetFOV();
 
 	void UpdateProjectionMatrix(float aspectRatio);
