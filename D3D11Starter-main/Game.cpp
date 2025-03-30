@@ -200,9 +200,9 @@ void Game::CreateGeometry()
 	torus = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.igme540obj").c_str(), Graphics::Device);
 	quad = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.igme540obj").c_str(), Graphics::Device);
 
-	entities.push_back(GameEntity(cube, cobblestone));
-	entities.push_back(GameEntity(cylinder, scratched));
-	entities.push_back(GameEntity(helix, bronze));
+	entities.push_back(GameEntity(cube, greyDiffuse));
+	entities.push_back(GameEntity(cylinder, darkGrey));
+	entities.push_back(GameEntity(helix, metal));
 	entities.push_back(GameEntity(sphere, floor));
 	entities.push_back(GameEntity(torus, paint));
 	entities.push_back(GameEntity(quad, iron));

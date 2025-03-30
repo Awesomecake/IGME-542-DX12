@@ -915,6 +915,7 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 		DXRCommandList->SetComputeRootDescriptorTable(0, RaytracingOutputUAV_GPU);			// First table is just output UAV
 		DXRCommandList->SetComputeRootShaderResourceView(1, TLAS->GetGPUVirtualAddress());			// Second is SRV for accel structure (as root SRV, no table needed)
 		DXRCommandList->SetComputeRootDescriptorTable(2, cbuffer);	// Third is CBV
+		DXRCommandList->SetComputeRootDescriptorTable(3, heap[0]->GetGPUDescriptorHandleForHeapStart()); // Fourth is entire heap for bindless
 
 		// Dispatch rays
 		D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};

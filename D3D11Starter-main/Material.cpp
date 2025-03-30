@@ -74,7 +74,13 @@ void Material::SetMetal(float _metal)
 //Register SRV into Slot - Currently only 4 slots available
 void Material::AddTexture(D3D12_CPU_DESCRIPTOR_HANDLE srv, int slot)
 {
+	// Valid slot?
+	if (finalized || slot < 0 || slot >= 4)
+		return;
+
+	// Save and check if this was the highest slot
 	textureSRVsBySlot[slot] = srv;
+	highestSRVSlot = max(highestSRVSlot, slot);
 }
 
 void Material::FinalizeMaterial()

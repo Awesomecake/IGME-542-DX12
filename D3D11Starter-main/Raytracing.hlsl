@@ -95,41 +95,41 @@ uint3 LoadIndices(uint triangleIndex)
 Vertex InterpolateVertices(uint triangleIndex, float2 barycentrics)
 {
 	// Calculate the barycentric data for vertex interpolation
-	float3 barycentricData = float3(
+    float3 barycentricData = float3(
 		1.0f - barycentrics.x - barycentrics.y,
 		barycentrics.x,
 		barycentrics.y);
 
 	// Grab the indices
-	uint3 indices = LoadIndices(triangleIndex);
+    uint3 indices = LoadIndices(triangleIndex);
 
 	// Set up the final vertex
-    Vertex vert = (Vertex)0;
+    Vertex vert = (Vertex) 0;
 
 	// Loop through the barycentric data and interpolate
-	for (uint i = 0; i < 3; i++)
-	{
+    for (uint i = 0; i < 3; i++)
+    {
 		// Get the index of the first piece of data for this vertex
-		uint dataIndex = indices[i] * VertexSizeInBytes;
+        uint dataIndex = indices[i] * VertexSizeInBytes;
 
 		// Grab the position and offset
-		vert.localPosition += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
-		dataIndex += 3 * 4; // 3 floats * 4 bytes per float
+        vert.localPosition += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
+        dataIndex += 3 * 4; // 3 floats * 4 bytes per float
 
 		// UV
-		vert.uv += asfloat(VertexBuffer.Load2(dataIndex)) * barycentricData[i];
-		dataIndex += 2 * 4; // 2 floats * 4 bytes per float
+        vert.uv += asfloat(VertexBuffer.Load2(dataIndex)) * barycentricData[i];
+        dataIndex += 2 * 4; // 2 floats * 4 bytes per float
 
 		// Normal
-		vert.normal += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
-		dataIndex += 3 * 4; // 3 floats * 4 bytes per float
+        vert.normal += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
+        dataIndex += 3 * 4; // 3 floats * 4 bytes per float
 
 		// Tangent (no offset at the end, since we start over after looping)
-		vert.tangent += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
-	}
+        vert.tangent += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
+    }
 
 	// Final interpolated vertex data is ready
-	return vert;
+    return vert;
 }
 
 
@@ -258,6 +258,7 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	
     // Get the geometry hit details and convert normal to world space
     Vertex hit = InterpolateVertices(PrimitiveIndex(), hitAttributes.barycentrics);
+    
     float3 normal_WS = normalize(mul(hit.normal, (float3x3) ObjectToWorld4x3()));
     float3 tangent_WS = normalize(mul(hit.tangent, (float3x3) ObjectToWorld4x3()));
 	
@@ -266,8 +267,21 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
     float roughness = mat.roughness; // Squared remap
     float3 surfaceColor = mat.color.rgb;
     float metal = mat.metal;
+    
+    	// Texture?
+    if (mat.albedoIndex != -1)
+    {
+        hit.uv = hit.uv * mat.uvScale + mat.uvOffset;
+        surfaceColor = AllTextures[mat.albedoIndex].SampleLevel(BasicSampler, hit.uv, 0).rgb;
+        roughness = AllTextures[mat.roughnessIndex].SampleLevel(BasicSampler, hit.uv, 0).r;
+        metal = AllTextures[mat.metalnessIndex].SampleLevel(BasicSampler, hit.uv, 0).r;
+
+        float3 normalFromMap = AllTextures[mat.normalMapIndex].SampleLevel(BasicSampler, hit.uv, 0).rgb * 2 - 1;
+        normal_WS = NormalMapping(normalFromMap, normal_WS, tangent_WS);
+
+    }
 	
-    payload.color *= AllTextures[mat.albedoIndex].SampleLevel(BasicSampler, hit.uv, 0).rgb;
+    payload.color *= surfaceColor;
 	
 	// Calc a unique RNG value for this ray, based on the "uv" (0-1 location) of this pixel and other per-ray data
     float2 pixelUV = (float2) DispatchRaysIndex().xy / DispatchRaysDimensions().xy;
