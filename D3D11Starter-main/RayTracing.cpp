@@ -687,7 +687,7 @@ MeshRaytracingData RayTracing::CreateBottomLevelAccelerationStructureForMesh(Mes
 // up of one or more BLAS instances, each with their own
 // unique transform.  This demo uses exactly one BLAS instance.
 // --------------------------------------------------------
-void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<GameEntity> entities)
+void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::shared_ptr<GameEntity>> entities)
 {
 	// Don't bother if DXR isn't available or the AS is finalized already
 	if (!dxrAvailable)
@@ -706,11 +706,11 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<GameEnt
 	for (size_t i = 0; i < entities.size(); i++)
 	{
 		// Grab this entity's transform and transpose to column major
-		DirectX::XMFLOAT4X4 transform = entities[i].GetTransform().GetWorldMatrix();
+		DirectX::XMFLOAT4X4 transform = entities[i]->GetTransform().GetWorldMatrix();
 		XMStoreFloat4x4(&transform, XMMatrixTranspose(XMLoadFloat4x4(&transform)));
 
 		// Grab this mesh's index in the shader table
-		std::shared_ptr<Mesh> mesh = entities[i].GetMesh();
+		std::shared_ptr<Mesh> mesh = entities[i]->GetMesh();
 		unsigned int meshBlasIndex = mesh->GetRaytracingData().HitGroupIndex;
 
 		// Create this description and add to our overall set of descriptions
@@ -726,7 +726,7 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<GameEnt
 		// Set up the entity data for this entity, too
 		// - mesh index tells us which cbuffer
 		// - instance ID tells us which instance in that cbuffer
-		std::shared_ptr<Material> mat = entities[i].GetMaterial();
+		std::shared_ptr<Material> mat = entities[i]->GetMaterial();
 		entityData[meshBlasIndex].materials[id.InstanceID].color = mat->GetColorTint();
 		entityData[meshBlasIndex].materials[id.InstanceID].roughness = mat->GetRoughness();
 		entityData[meshBlasIndex].materials[id.InstanceID].metal = mat->GetMetal();

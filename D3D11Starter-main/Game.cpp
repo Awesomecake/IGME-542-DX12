@@ -28,7 +28,7 @@ void Game::Initialize()
 	RayTracing::Initialize(Window::Width(), Window::Height(), FixPath(L"RayTracing.cso"));
 
 	camera = std::make_shared<Camera>(viewport.Width / viewport.Height, 45.f, XMFLOAT3(0.5, 0, -5));
-	entities = std::vector<GameEntity>();
+	entities = std::vector<std::shared_ptr<GameEntity>>();
 
 	// Load textures
 	D3D12_CPU_DESCRIPTOR_HANDLE cobblestoneAlbedo = Graphics::LoadTexture(FixPath(PBR_Assets "cobblestone_albedo.png").c_str());
@@ -200,18 +200,18 @@ void Game::CreateGeometry()
 	torus = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.igme540obj").c_str(), Graphics::Device);
 	quad = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.igme540obj").c_str(), Graphics::Device);
 
-	entities.push_back(GameEntity(cube, greyDiffuse));
-	entities.push_back(GameEntity(cylinder, darkGrey));
-	entities.push_back(GameEntity(helix, metal));
-	entities.push_back(GameEntity(sphere, floor));
-	entities.push_back(GameEntity(torus, paint));
-	entities.push_back(GameEntity(quad, iron));
+	entities.push_back(std::make_shared<GameEntity>(cube, greyDiffuse));
+	entities.push_back(std::make_shared<GameEntity>(cylinder, greyDiffuse));
+	entities.push_back(std::make_shared<GameEntity>(helix, greyDiffuse));
+	entities.push_back(std::make_shared<GameEntity>(sphere, greyDiffuse));
+	entities.push_back(std::make_shared<GameEntity>(torus, greyDiffuse));
+	entities.push_back(std::make_shared<GameEntity>(quad, greyDiffuse));
 
-	entities[0].GetTransform().SetPosition(-9, 0, 0);
-	entities[1].GetTransform().SetPosition(-6, 0, 0);
-	entities[2].GetTransform().SetPosition(-3, 0, 0);
-	entities[4].GetTransform().SetPosition(3, 0, 0);
-	entities[5].GetTransform().SetPosition(6, 0, 0);
+	entities[0]->GetTransform().SetPosition(-9, 0, 0);
+	entities[1]->GetTransform().SetPosition(-6, 0, 0);
+	entities[2]->GetTransform().SetPosition(-3, 0, 0);
+	entities[4]->GetTransform().SetPosition(3, 0, 0);
+	entities[5]->GetTransform().SetPosition(6, 0, 0);
 }
 
 
@@ -263,13 +263,13 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera.get()->Update(deltaTime);
 
-	entities[0].GetTransform().Rotate(deltaTime, 0, 0);
-	entities[5].GetTransform().Rotate(0, deltaTime, 0);
+	entities[0]->GetTransform().Rotate(deltaTime, 0, 0);
+	entities[5]->GetTransform().Rotate(0, deltaTime, 0);
 
-	entities[1].GetTransform().MoveAbsolute(0, deltaTime * cosf(totalTime), 0);
-	entities[2].GetTransform().MoveAbsolute(0, deltaTime * -cosf(-totalTime), 0);
-	entities[3].GetTransform().MoveAbsolute(0,0,deltaTime * cosf(totalTime));
-	entities[4].GetTransform().MoveAbsolute(0,0,deltaTime * -cosf(-totalTime));
+	entities[1]->GetTransform().MoveAbsolute(0, deltaTime * cosf(totalTime), 0);
+	entities[2]->GetTransform().MoveAbsolute(0, deltaTime * -cosf(-totalTime), 0);
+	entities[3]->GetTransform().MoveAbsolute(0,0,deltaTime * cosf(totalTime));
+	entities[4]->GetTransform().MoveAbsolute(0,0,deltaTime * -cosf(-totalTime));
 }
 
 

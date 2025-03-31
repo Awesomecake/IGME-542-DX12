@@ -47,7 +47,7 @@ private:
 
 	std::shared_ptr<Camera> camera;
 
-	std::vector<GameEntity> entities;
+	std::vector<std::shared_ptr<GameEntity>> entities;
 
 	std::shared_ptr<Mesh> cube;
 	std::shared_ptr<Mesh> cylinder;
