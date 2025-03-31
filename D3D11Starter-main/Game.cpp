@@ -207,11 +207,11 @@ void Game::CreateGeometry()
 	entities.push_back(std::make_shared<GameEntity>(torus, paint));
 	entities.push_back(std::make_shared<GameEntity>(quad, iron));
 
-	entities[0]->GetTransform().SetPosition(-9, 0, 0);
-	entities[1]->GetTransform().SetPosition(-6, 0, 0);
-	entities[2]->GetTransform().SetPosition(-3, 0, 0);
-	entities[4]->GetTransform().SetPosition(3, 0, 0);
-	entities[5]->GetTransform().SetPosition(6, 0, 0);
+	entities[0]->GetTransform()->SetPosition(-9, 0, 0);
+	entities[1]->GetTransform()->SetPosition(-6, 0, 0);
+	entities[2]->GetTransform()->SetPosition(-3, 0, 0);
+	entities[4]->GetTransform()->SetPosition(3, 0, 0);
+	entities[5]->GetTransform()->SetPosition(6, 0, 0);
 }
 
 

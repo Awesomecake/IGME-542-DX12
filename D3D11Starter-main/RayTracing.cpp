@@ -706,7 +706,7 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 	for (size_t i = 0; i < entities.size(); i++)
 	{
 		// Grab this entity's transform and transpose to column major
-		DirectX::XMFLOAT4X4 transform = entities[i]->GetTransform().GetWorldMatrix();
+		DirectX::XMFLOAT4X4 transform = entities[i]->GetTransform()->GetWorldMatrix();
 		XMStoreFloat4x4(&transform, XMMatrixTranspose(XMLoadFloat4x4(&transform)));
 
 		// Grab this mesh's index in the shader table
@@ -890,7 +890,7 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 
 	// Grab and fill a constant buffer
 	RaytracingSceneData sceneData = {};
-	sceneData.cameraPosition = camera->GetTransform().GetPosition();
+	sceneData.cameraPosition = camera->GetTransform()->GetPosition();
 
 	DirectX::XMFLOAT4X4 view = camera->GetViewMatrix();
 	DirectX::XMFLOAT4X4 proj = camera->GetProjectionMatrix();
