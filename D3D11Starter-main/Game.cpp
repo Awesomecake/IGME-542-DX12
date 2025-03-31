@@ -200,12 +200,12 @@ void Game::CreateGeometry()
 	torus = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.igme540obj").c_str(), Graphics::Device);
 	quad = std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.igme540obj").c_str(), Graphics::Device);
 
-	entities.push_back(std::make_shared<GameEntity>(cube, greyDiffuse));
-	entities.push_back(std::make_shared<GameEntity>(cylinder, greyDiffuse));
-	entities.push_back(std::make_shared<GameEntity>(helix, greyDiffuse));
-	entities.push_back(std::make_shared<GameEntity>(sphere, greyDiffuse));
-	entities.push_back(std::make_shared<GameEntity>(torus, greyDiffuse));
-	entities.push_back(std::make_shared<GameEntity>(quad, greyDiffuse));
+	entities.push_back(std::make_shared<GameEntity>(cube, cobblestone));
+	entities.push_back(std::make_shared<GameEntity>(cylinder, scratched));
+	entities.push_back(std::make_shared<GameEntity>(helix, bronze));
+	entities.push_back(std::make_shared<GameEntity>(sphere, floor));
+	entities.push_back(std::make_shared<GameEntity>(torus, paint));
+	entities.push_back(std::make_shared<GameEntity>(quad, iron));
 
 	entities[0]->GetTransform().SetPosition(-9, 0, 0);
 	entities[1]->GetTransform().SetPosition(-6, 0, 0);
