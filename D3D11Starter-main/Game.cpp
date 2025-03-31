@@ -72,7 +72,7 @@ void Game::Initialize()
 	// Note: Samplers are handled by a single static sampler in the
 	// root signature for this demo, rather than per-material
 	greyDiffuse = std::make_shared<Material>(XMFLOAT3(0.5f, 0.5f, 0.5f), 1.0f, 0.0f);
-	darkGrey = std::make_shared<Material>(XMFLOAT3(0.25f, 0.25f, 0.25f), 0.0f, 1.0f);
+	reflective = std::make_shared<Material>(XMFLOAT3(0.25f, 0.25f, 0.25f), 0.0f, 0.0f);
 	metal = std::make_shared<Material>(XMFLOAT3(0.5f, 0.6f, 0.7f), 0.0f, 1.0f);
 
 	cobblestone = std::make_shared<Material>(XMFLOAT3(1, 1, 1));
@@ -207,11 +207,17 @@ void Game::CreateGeometry()
 	entities.push_back(std::make_shared<GameEntity>(torus, paint));
 	entities.push_back(std::make_shared<GameEntity>(quad, iron));
 
+	entities.push_back(std::make_shared<GameEntity>(cube, reflective));
+
+
 	entities[0]->GetTransform()->SetPosition(-9, 0, 0);
 	entities[1]->GetTransform()->SetPosition(-6, 0, 0);
 	entities[2]->GetTransform()->SetPosition(-3, 0, 0);
 	entities[4]->GetTransform()->SetPosition(3, 0, 0);
 	entities[5]->GetTransform()->SetPosition(6, 0, 0);
+
+	entities[6]->GetTransform()->SetPosition(0, -4, 0);
+	entities[6]->GetTransform()->SetScale(6, 1, 6);
 }
 
 

@@ -57,7 +57,7 @@ private:
 	std::shared_ptr<Mesh> quad;
 
 	std::shared_ptr<Material> greyDiffuse;
-	std::shared_ptr<Material> darkGrey;
+	std::shared_ptr<Material> reflective;
 	std::shared_ptr<Material> metal;
 
 	std::shared_ptr<Material> cobblestone;
