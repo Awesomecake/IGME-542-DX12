@@ -102,4 +102,6 @@ namespace Graphics
 	void ReserveDescriptorHeapSlot(
 		D3D12_CPU_DESCRIPTOR_HANDLE* reservedCPUHandle,
 		D3D12_GPU_DESCRIPTOR_HANDLE* reservedGPUHandle);
+
+	UINT GetDescriptorIndex(D3D12_GPU_DESCRIPTOR_HANDLE handle);
 }

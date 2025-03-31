@@ -27,7 +27,22 @@ struct RayPayload
 // Note: We'll be using the built-in BuiltInTriangleIntersectionAttributes struct
 // for triangle attributes, so no need to define our own.  It contains a single float2.
 
+struct RaytracingMaterialData
+{
+    float3 color;
+    float roughness;
+	
+    float2 uvScale;
+    float2 uvOffset;
+	
+    float metal;
+    float3 padding;
 
+    uint albedoIndex;
+    uint normalMapIndex;
+    uint roughnessIndex;
+    uint metalnessIndex;
+};
 
 // === Constant buffers ===
 
@@ -41,7 +56,7 @@ cbuffer SceneData : register(b0)
 #define MAX_INSTANCES_PER_BLAS 100
 cbuffer ObjectData : register(b1)
 {
-    float4 entityColor[MAX_INSTANCES_PER_BLAS];
+    RaytracingMaterialData materials[MAX_INSTANCES_PER_BLAS];
 };
 
 // === Resources ===
@@ -56,6 +71,12 @@ RaytracingAccelerationStructure SceneTLAS	: register(t0);
 ByteAddressBuffer IndexBuffer        		: register(t1);
 ByteAddressBuffer VertexBuffer				: register(t2);
 
+// Textures
+Texture2D AllTextures[] : register(t0, space1);
+TextureCube Skybox : register(t0, space2);
+
+// Samplers
+SamplerState BasicSampler : register(s0);
 
 // === Helpers ===
 
@@ -74,41 +95,41 @@ uint3 LoadIndices(uint triangleIndex)
 Vertex InterpolateVertices(uint triangleIndex, float2 barycentrics)
 {
 	// Calculate the barycentric data for vertex interpolation
-	float3 barycentricData = float3(
+    float3 barycentricData = float3(
 		1.0f - barycentrics.x - barycentrics.y,
 		barycentrics.x,
 		barycentrics.y);
 
 	// Grab the indices
-	uint3 indices = LoadIndices(triangleIndex);
+    uint3 indices = LoadIndices(triangleIndex);
 
 	// Set up the final vertex
-    Vertex vert = (Vertex)0;
+    Vertex vert = (Vertex) 0;
 
 	// Loop through the barycentric data and interpolate
-	for (uint i = 0; i < 3; i++)
-	{
+    for (uint i = 0; i < 3; i++)
+    {
 		// Get the index of the first piece of data for this vertex
-		uint dataIndex = indices[i] * VertexSizeInBytes;
+        uint dataIndex = indices[i] * VertexSizeInBytes;
 
 		// Grab the position and offset
-		vert.localPosition += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
-		dataIndex += 3 * 4; // 3 floats * 4 bytes per float
+        vert.localPosition += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
+        dataIndex += 3 * 4; // 3 floats * 4 bytes per float
 
 		// UV
-		vert.uv += asfloat(VertexBuffer.Load2(dataIndex)) * barycentricData[i];
-		dataIndex += 2 * 4; // 2 floats * 4 bytes per float
+        vert.uv += asfloat(VertexBuffer.Load2(dataIndex)) * barycentricData[i];
+        dataIndex += 2 * 4; // 2 floats * 4 bytes per float
 
 		// Normal
-		vert.normal += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
-		dataIndex += 3 * 4; // 3 floats * 4 bytes per float
+        vert.normal += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
+        dataIndex += 3 * 4; // 3 floats * 4 bytes per float
 
 		// Tangent (no offset at the end, since we start over after looping)
-		vert.tangent += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
-	}
+        vert.tangent += asfloat(VertexBuffer.Load3(dataIndex)) * barycentricData[i];
+    }
 
 	// Final interpolated vertex data is ready
-	return vert;
+    return vert;
 }
 
 
@@ -193,6 +214,21 @@ void RayGen()
     OutputColor[rayIndices] = float4(avg, 1);
 }
 
+// Handle converting tangent-space normal map to world space normal
+float3 NormalMapping(float3 normalFromMap, float3 normal, float3 tangent)
+{
+	// Gather the required vectors for converting the normal
+    float3 N = normal;
+    float3 T = normalize(tangent - N * dot(tangent, N));
+    float3 B = cross(T, N);
+
+	// Create the 3x3 matrix to convert from TANGENT-SPACE normals to WORLD-SPACE normals
+    float3x3 TBN = float3x3(T, B, N);
+
+	// Adjust the normal from the map and simply use the results
+    return normalize(mul(normalFromMap, TBN));
+}
+
 
 // Miss shader - What happens if the ray doesn't hit anything?
 [shader("miss")]
@@ -220,12 +256,32 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
         return;
     }
 	
-	// We've hit, so adjust the payload color by this instance's color
-    payload.color *= entityColor[InstanceID()].rgb;
-	
-	// Get the geometry hit details and convert normal to world space
+    // Get the geometry hit details and convert normal to world space
     Vertex hit = InterpolateVertices(PrimitiveIndex(), hitAttributes.barycentrics);
+    
     float3 normal_WS = normalize(mul(hit.normal, (float3x3) ObjectToWorld4x3()));
+    float3 tangent_WS = normalize(mul(hit.tangent, (float3x3) ObjectToWorld4x3()));
+	
+	// Get this material data
+    RaytracingMaterialData mat = materials[InstanceID()];
+    float roughness = mat.roughness; // Squared remap
+    float3 surfaceColor = mat.color.rgb;
+    float metal = mat.metal;
+    
+    	// Texture?
+    if (mat.albedoIndex != -1)
+    {
+        hit.uv = hit.uv * mat.uvScale + mat.uvOffset;
+        surfaceColor = AllTextures[mat.albedoIndex].SampleLevel(BasicSampler, hit.uv, 0).rgb;
+        roughness = AllTextures[mat.roughnessIndex].SampleLevel(BasicSampler, hit.uv, 0).r;
+        metal = AllTextures[mat.metalnessIndex].SampleLevel(BasicSampler, hit.uv, 0).r;
+
+        float3 normalFromMap = AllTextures[mat.normalMapIndex].SampleLevel(BasicSampler, hit.uv, 0).rgb * 2 - 1;
+        normal_WS = NormalMapping(normalFromMap, normal_WS, tangent_WS);
+
+    }
+	
+    payload.color *= surfaceColor;
 	
 	// Calc a unique RNG value for this ray, based on the "uv" (0-1 location) of this pixel and other per-ray data
     float2 pixelUV = (float2) DispatchRaysIndex().xy / DispatchRaysDimensions().xy;
@@ -234,7 +290,7 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	// Interpolate between perfect reflection and random bounce based on roughness
     float3 refl = reflect(WorldRayDirection(), normal_WS);
     float3 randomBounce = RandomCosineWeightedHemisphere(rand(rng), rand(rng.yx), normal_WS);
-    float3 dir = normalize(lerp(refl, randomBounce, entityColor[InstanceID()].a));
+    float3 dir = normalize(lerp(refl, randomBounce, roughness));
 	
 	// Create the new recursive ray
     RayDesc ray;

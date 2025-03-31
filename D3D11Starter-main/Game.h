@@ -56,9 +56,17 @@ private:
 	std::shared_ptr<Mesh> torus;
 	std::shared_ptr<Mesh> quad;
 
-	std::shared_ptr<Material> mat1;
-	std::shared_ptr<Material> mat2;
-	std::shared_ptr<Material> mat3;
+	std::shared_ptr<Material> greyDiffuse;
+	std::shared_ptr<Material> darkGrey;
+	std::shared_ptr<Material> metal;
+
+	std::shared_ptr<Material> cobblestone;
+	std::shared_ptr<Material> scratched;
+	std::shared_ptr<Material> bronze;
+	std::shared_ptr<Material> floor;
+	std::shared_ptr<Material> paint;
+	std::shared_ptr<Material> iron;
+	std::shared_ptr<Material> wood;
 
 	std::vector<Light> lights;
 };
