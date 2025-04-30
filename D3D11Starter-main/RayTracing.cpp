@@ -865,7 +865,7 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 // --------------------------------------------------------
 // Performs the actual raytracing work
 // --------------------------------------------------------
-void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer)
+void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer, D3D12_GPU_DESCRIPTOR_HANDLE skyboxHandle)
 {
 	if (!dxrInitialized || !dxrAvailable)
 		return;
@@ -917,6 +917,7 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 		DXRCommandList->SetComputeRootShaderResourceView(1, TLAS->GetGPUVirtualAddress());			// Second is SRV for accel structure (as root SRV, no table needed)
 		DXRCommandList->SetComputeRootDescriptorTable(2, cbuffer);	// Third is CBV
 		DXRCommandList->SetComputeRootDescriptorTable(3, heap[0]->GetGPUDescriptorHandleForHeapStart()); // Fourth is entire heap for bindless
+		DXRCommandList->SetComputeRootDescriptorTable(4, skyboxHandle);
 
 		// Dispatch rays
 		D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};

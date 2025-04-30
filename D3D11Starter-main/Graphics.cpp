@@ -767,6 +767,120 @@ D3D12_CPU_DESCRIPTOR_HANDLE Graphics::LoadTexture(const wchar_t* file, bool gene
 	return cpuHandle;
 }
 
+// --------------------------------------------------------
+// Loads a cube map using the DirectX Toolkit and creates
+// a descriptor for it in the overall SRV heap
+// --------------------------------------------------------
+D3D12_GPU_DESCRIPTOR_HANDLE Graphics::LoadCubeTexture(
+	const wchar_t* right,
+	const wchar_t* left,
+	const wchar_t* up,
+	const wchar_t* down,
+	const wchar_t* front,
+	const wchar_t* back)
+{
+	// Prepare to store the 6 textures
+	const wchar_t* paths[6] = { right, left, up, down, front, back };
+	Microsoft::WRL::ComPtr<ID3D12Resource> faces[6] = {};
+
+	// Load the 6 textures
+	DirectX::ResourceUploadBatch upload(Device.Get());
+	for (int i = 0; i < 6; i++)
+	{
+		upload.Begin();
+		CreateWICTextureFromFile(Device.Get(), upload, paths[i], faces[i].GetAddressOf());
+		auto finish = upload.End(CommandQueue.Get());
+		finish.wait();
+
+		// Transition to the copy state
+		D3D12_RESOURCE_BARRIER rb = {};
+		rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		rb.Transition.pResource = faces[i].Get();
+		rb.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		rb.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+		rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		CommandList->ResourceBarrier(1, &rb);
+	}
+
+	// Grab the description of one face
+	UINT64 faceSize = faces[0]->GetDesc().Width;
+	DXGI_FORMAT format = faces[0]->GetDesc().Format;
+
+	// Create the final texture
+	D3D12_HEAP_PROPERTIES heapDesc = {};
+	heapDesc.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapDesc.CreationNodeMask = 1;
+	heapDesc.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapDesc.Type = D3D12_HEAP_TYPE_DEFAULT;
+	heapDesc.VisibleNodeMask = 1;
+
+	D3D12_RESOURCE_DESC desc = {};
+	desc.Alignment = 0;
+	desc.DepthOrArraySize = 6;
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	desc.Format = format;
+	desc.Height = (UINT)faceSize;
+	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	desc.MipLevels = 1;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Width = (UINT)faceSize;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureCube;
+	Device->CreateCommittedResource(&heapDesc, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COPY_DEST, 0, IID_PPV_ARGS(textureCube.GetAddressOf()));
+
+	// Copy all of the faces into the texture array
+	for (int i = 0; i < 6; i++)
+	{
+		D3D12_TEXTURE_COPY_LOCATION src = {};
+		src.pResource = faces[i].Get();
+		src.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		src.SubresourceIndex = 0;
+
+		D3D12_TEXTURE_COPY_LOCATION dest = {};
+		dest.pResource = textureCube.Get();
+		dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		dest.SubresourceIndex = i;
+
+		CommandList->CopyTextureRegion(&dest, 0, 0, 0, &src, 0);
+	}
+	// Transition to the generic read state
+	D3D12_RESOURCE_BARRIER rb = {};
+	rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	rb.Transition.pResource = textureCube.Get();
+	rb.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	rb.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	CommandList->ResourceBarrier(1, &rb);
+
+	CloseAndExecuteCommandList();
+	WaitForGPU();
+	ResetAllocatorAndCommandList();
+
+	// Save the resource
+	textures.push_back(textureCube);
+
+	// Reserve a spot in the overall SRV heap
+	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle;
+	ReserveDescriptorHeapSlot(&cpuHandle, &gpuHandle);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+	srvDesc.TextureCube.MipLevels = 1;
+	srvDesc.TextureCube.MostDetailedMip = 0;
+	srvDesc.TextureCube.ResourceMinLODClamp = 0;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	Device->CreateShaderResourceView(textureCube.Get(), &srvDesc, cpuHandle);
+
+	// Send back the GPU handle
+	return gpuHandle;
+}
+
 // ======== Raytracing Function Bodies =========
 
 // --------------------------------------------------------

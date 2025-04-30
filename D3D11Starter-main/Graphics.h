@@ -68,6 +68,15 @@ namespace Graphics
 	void CloseAndExecuteCommandList();
 	void WaitForGPU();
 
+	// Resource creation
+	D3D12_GPU_DESCRIPTOR_HANDLE LoadCubeTexture(
+		const wchar_t* right,
+		const wchar_t* left,
+		const wchar_t* up,
+		const wchar_t* down,
+		const wchar_t* front,
+		const wchar_t* back);
+
 	// Maximum number of constant buffers, assuming each buffer
 	// is 256 bytes or less. Larger buffers are fine, but will
 	// result in fewer buffers in use at any time

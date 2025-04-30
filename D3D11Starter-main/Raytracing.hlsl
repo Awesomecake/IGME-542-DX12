@@ -234,14 +234,9 @@ float3 NormalMapping(float3 normalFromMap, float3 normal, float3 tangent)
 [shader("miss")]
 void Miss(inout RayPayload payload)
 {
-    float3 colorOne = float3(0.2f, 0.2f, 0.8f);
-    float3 colorTwo = float3(1, 1, 1);
-
-    float interp = dot(normalize(WorldRayDirection()), float3(0, 1, 0)) * 0.5f + 0.5f;
-    float3 skyboxColor = lerp(colorTwo, colorOne, interp);
-	
-	// Alter the payload color by the sky color
-    payload.color *= skyboxColor;
+	// Alter the payload color by the sky color (converting to linear color space)
+	float3 skyColor = Skybox.SampleLevel(BasicSampler, WorldRayDirection(), 0).rgb;
+	payload.color *= pow(skyColor, 2.2f);
 }
 
 
@@ -281,7 +276,7 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 
     }
 	
-    payload.color *= surfaceColor;
+    payload.color *= pow(surfaceColor, 2.2f);
 	
 	// Calc a unique RNG value for this ray, based on the "uv" (0-1 location) of this pixel and other per-ray data
     float2 pixelUV = (float2) DispatchRaysIndex().xy / DispatchRaysDimensions().xy;

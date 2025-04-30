@@ -66,7 +66,7 @@ namespace RayTracing
 		unsigned int outputHeight);
 	void Raytrace(
 		std::shared_ptr<Camera> camera, 
-		Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer);
+		Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer, D3D12_GPU_DESCRIPTOR_HANDLE skyboxHandle);
 
 	// Helper functions for each initalization step
 	MeshRaytracingData CreateBottomLevelAccelerationStructureForMesh(Mesh* mesh);

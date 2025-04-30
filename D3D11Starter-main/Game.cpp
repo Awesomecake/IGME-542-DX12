@@ -27,6 +27,15 @@ void Game::Initialize()
 	// Initialize raytracing
 	RayTracing::Initialize(Window::Width(), Window::Height(), FixPath(L"RayTracing.cso"));
 
+	// Load the skybox
+	skyboxHandle = Graphics::LoadCubeTexture(
+		FixPath(PBR_Assets "Skies/Clouds-Blue/right.png").c_str(),
+		FixPath(PBR_Assets "Skies/Clouds-Blue/left.png").c_str(),
+		FixPath(PBR_Assets "Skies/Clouds-Blue/up.png").c_str(),
+		FixPath(PBR_Assets "Skies/Clouds-Blue/down.png").c_str(),
+		FixPath(PBR_Assets "Skies/Clouds-Blue/front.png").c_str(),
+		FixPath(PBR_Assets "Skies/Clouds-Blue/back.png").c_str());
+
 	camera = std::make_shared<Camera>(viewport.Width / viewport.Height, 45.f, XMFLOAT3(0.5, 0, -5));
 	entities = std::vector<std::shared_ptr<GameEntity>>();
 
@@ -290,7 +299,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Rendering here!
 	{
-		RayTracing::Raytrace(camera, currentBackBuffer);
+		RayTracing::Raytrace(camera, currentBackBuffer, skyboxHandle);
 	}
 
 	// Present

@@ -69,5 +69,7 @@ private:
 	std::shared_ptr<Material> wood;
 
 	std::vector<Light> lights;
+
+	D3D12_GPU_DESCRIPTOR_HANDLE skyboxHandle;
 };
 
