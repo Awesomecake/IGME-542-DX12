@@ -211,7 +211,7 @@ void RayGen()
     float3 avg = totalColor / raysPerPixel;
 	
 	// Set the final color of the buffer
-    OutputColor[rayIndices] = float4(avg, 1);
+    OutputColor[rayIndices] = float4(pow(avg, 1/2.2f), 1);
 }
 
 // Handle converting tangent-space normal map to world space normal
